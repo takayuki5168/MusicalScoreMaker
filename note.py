@@ -1,12 +1,13 @@
 from PyQt5.QtWidgets import QAction, QMenu
 from PyQt5.QtGui import QPen, QColor
+from PyQt5.QtCore import QPoint
 
 import color
 
 class Note:
 
     def __init__(self, w):
-        self.one_x = 200 #一分分音符の長さ
+        self.one_x = 200.0 #一分分音符の長さ
         self.one_fourth_x = self.one_x / 4.0
         self.one_eighth_x = self.one_x / 8.0
 
@@ -18,6 +19,9 @@ class Note:
         self.note_one_x = []
         self.note_one_fourth_x = []
         self.note_color = color.black
+
+        self.note = [[] for i in range(w.octet_num)]
+        self.note_num = 0 # どのパートの編集中か
         
     def update(self, w):
         if w.mode == 0: # 停止
@@ -26,7 +30,7 @@ class Note:
             tmp_one_score_x = (50 - self.now_x) % self.one_x
             tmp_one_fourth_score_x = (50 - self.now_x) % self.one_fourth_x
 
-            if (self.now_x - 50) % self.one_x < 10:
+            if self.now_x % self.one_x < 10:
                 self.note_color = color.red
             else:
                 self.note_color = color.black
@@ -52,12 +56,11 @@ class Note:
             pass
 
     def paint(self, w, painter):
-        painter.setPen(QPen(self.note_color, 2))
-        painter.drawArc(50 - 5, 400 - 5, 10, 10, 0, 16 * 360)
+        painter.setPen(QPen(color.blue, 2))
+        painter.drawLine(QPoint(50, 400 - 200), QPoint(50, 400 + 200))
 
         painter.setPen(QPen(color.black, 2))
         for x in self.note_one_x:
-            painter.drawArc(x - 5, 400 - 5, 10, 10, 0, 16 * 360)
+            painter.drawLine(QPoint(x, 400 - 30), QPoint(x, 400 + 30))
         for x in self.note_one_fourth_x:
-            painter.drawArc(x - 2, 400 - 2, 4, 4, 0, 16 * 360)            
-
+            painter.drawLine(QPoint(x, 400 - 20), QPoint(x, 400 + 20))

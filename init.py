@@ -1,8 +1,7 @@
 from PyQt5.QtWidgets import qApp
 from PyQt5.QtCore import QTimer
 
-import event
-import note
+import input, event, note
 
 def init(w):
     initValue(w)
@@ -15,7 +14,7 @@ def init(w):
     w.setMouseTracking(True)
 
 def initValue(w):
-    w.mode = 1 # 0:停止 1:入力 2:再生
+    w.mode = 0 # 0:停止 1:入力 2:再生
     w.octet_num = 1 # 何重奏
     w.tempo = 120 # テンポ
     w.input_speed = 1.0 # 何倍で入力するか
@@ -24,6 +23,7 @@ def initValue(w):
     
 def initUI(w):
     initMenubar(w)
+    initInput(w)
 
     w.setGeometry(200, 0, 960, 720)
     w.setWindowTitle('MusicalScoreMaker')
@@ -32,6 +32,9 @@ def initMenubar(w):
     pass
     #w.menu_bar = menubar.MenubarManager(w)
 
+def initInput(w):
+    input.init(w)
+    
 def initItem(w):
     w.note = note.Note(w)
     w.event = event.Event()
