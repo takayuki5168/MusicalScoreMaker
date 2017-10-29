@@ -1,9 +1,10 @@
 import numpy as np
 import pyaudio
 import math
+import threading
 
-class Play():
-    def __init__(self):
+class Play(threading.Thread):
+    def __init__(self, stream):
         super(Play, self).__init__()
         self.key_name = ['C1', 'D1', 'E1', 'F1', 'G1', 'A1', 'B1', 'C2', 'D2', 'E2', 'F2', 'G2', 'A2', 'B2', 'C3', 'D3', 'E3', 'F3', 'G3', 'A3', 'B3']
         self.key_diff = [-9, -7, -5, -4, -2, 0, 2, 3, 5, 7, 8, 10, 12, 14, 15, 17, 19, 20, 22, 24, 26]
@@ -11,11 +12,9 @@ class Play():
         self.key_freq = {}
         for key, diff in zip(self.key_name, self.key_diff):
             self.key_freq[key] = 440.0 * math.pow(2, diff / 12.0)
+        self.stream = stream
         self.pre_count = 0
         self.count = 0
-
-        self.p = pyaudio.PyAudio()
-        self.stream = self.p.open(format = pyaudio.paFloat32, channels = 3, rate = 44100, output = 1)
     
     # sin波生成
     def sine(self, freq, length, rate):
@@ -32,14 +31,24 @@ class Play():
         res = res1
         return res
         
-    def play_chord(self, freq, length, rate = 44100):
+    def play_chord(self, stream, freqs, lengths, rate = 44100):
         chunks = []
-        chunks.append(self.chord(freq, length, rate))
+        chunks.append(self.chord(freqs, lengths, rate))
         chunk = np.concatenate(chunks) * 0.25
-        self.stream.write(chunk.astype(np.float32).tostring())
+        stream.write(chunk.astype(np.float32).tostring())
 
-    def playPiano(self, i, length = 100):
-        self.play_chord(self.key_name[i], length)
-    
-    def test(self, sound):
-        self.stream.write(sound)
+    def setSoundLength(self, note, length):
+        self.note = note
+        self.length = length
+
+    def setNextSound(self):
+        self.count += 1
+
+    def playPiano(self, stream, i):
+        self.play_chord(stream, self.key_name[i], 100)
+
+    def run(self):
+        #while True:
+            if self.pre_count != self.count:
+                self.pre_count = self.count
+                self.play_chord(self.stream, self.note, self.length)

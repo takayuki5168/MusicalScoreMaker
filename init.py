@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import qApp
 from PyQt5.QtCore import QTimer
 
-import input, event, note
+import input, event, note, play
 
 def init(w):
     initValue(w)
@@ -20,6 +20,8 @@ def initValue(w):
     w.input_speed = 1.0 # 何倍で入力するか
     w.beat_deno = 4 # 拍子の分母 not implemented
     w.beat_nume = 4 # 拍子の分子 not implemented
+    
+    w.play = play.Play()
     
 def initUI(w):
     initMenubar(w)

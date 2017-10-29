@@ -1,8 +1,13 @@
-from PyQt5.QtWidgets import QAction, QMenu
+from PyQt5.QtWidgets import QAction, QMenu, QLabel
 from PyQt5.QtGui import QPen, QColor
 from PyQt5.QtCore import QPoint
 
+import math
+import numpy as np
+
 import color
+import time
+import play
 
 class Note:
 
@@ -11,9 +16,10 @@ class Note:
         self.one_fourth_x = self.one_x / 4.0
         self.one_eighth_x = self.one_x / 8.0
 
-        self.now_x = 0
+        self.now_x = -10 # self.min_score_xが原点
+        self.pre_x = 0
         self.forward_x_step = w.tempo / 60.0 * self.one_fourth_x * w.time_step / 1000 * w.input_speed
-        self.max_score_x = 700
+        self.max_score_x = 900
         self.min_score_x = 50
 
         self.note_one_x = []
@@ -21,46 +27,129 @@ class Note:
         self.note_color = color.black
 
         self.note = [[] for i in range(w.octet_num)]
-        self.note_num = 0 # どのパートの編集中か
+        self.modifying_part_id = 0 # どのパートの編集中か
+        self.note_y_center = 310
+        self.sound_labels = []
+        self.flag = False
+
+        # メトロノームの音の初期化
+        #self.m_sound1 = (np.concatenate([np.sin(np.arange(0.1 * 50000) * 440 * math.pow(2, 3 / 12.0) * math.pi * 2 / 44100)]) * 0.25).astype(np.float32).tostring()
+        self.m_sound2 = (np.concatenate([np.sin(np.arange(0.1 * 50000) * 440 * math.pow(2, -9 / 12.0) * math.pi * 2 / 44100)]) * 0.25).astype(np.float32).tostring()
+
+        self.t = 0
         
     def update(self, w):
         if w.mode == 0: # 停止
             pass
         elif w.mode == 1: # 入力
-            tmp_one_score_x = (50 - self.now_x) % self.one_x
-            tmp_one_fourth_score_x = (50 - self.now_x) % self.one_fourth_x
+            self.pre_x = self.now_x
+            self.now_x += self.forward_x_step
 
-            if self.now_x % self.one_x < 10:
-                self.note_color = color.red
-            else:
-                self.note_color = color.black
-
-            # どこに音符を表示するか計算
-            self.note_one_x = []
-            self.note_one_fourth_x = []
-            while True:
-                if tmp_one_score_x > self.min_score_x:
-                    self.note_one_x.append(tmp_one_score_x)
-                if tmp_one_score_x> self.max_score_x:
-                    break
-                tmp_one_score_x += self.one_x
-            while True:
-                if tmp_one_fourth_score_x > self.min_score_x:
-                    self.note_one_fourth_x.append(tmp_one_fourth_score_x)
-                if tmp_one_fourth_score_x > self.max_score_x:
-                    break
-                tmp_one_fourth_score_x += self.one_fourth_x
-
-            self.now_x += self.forward_x_step            
+            if self.pre_x % self.one_x > self.now_x % self.one_x:
+                w.play.playPiano(9, 5)
+            elif self.pre_x % self.one_fourth_x > self.now_x % self.one_fourth_x:
+                #w.play.playPiano(7, 5)
+                w.play.test(self.m_sound2)
         elif w.mode == 2: # 再生
-            pass
+            self.pre_x = self.now_x
+            self.now_x += self.forward_x_step
+
+            for notes in self.note:
+                for n in notes:
+                    if n == []:
+                        break
+                    nx1 = self.min_score_x - self.now_x + n[1]
+                    if n[2] == -1:
+                        break
+                    else:
+                        nx2 = self.min_score_x - self.now_x + n[2]
+                    if nx1 - self.min_score_x > 0 and nx1 - self.min_score_x < self.forward_x_step:
+                        #w.play.play_chord(self.stream, n[0], nx2 - nx1)
+                        #w.play.play_chord(self.stream, n[0], 1)
+                        #w.play.setSoundLength(n[0], nx2 - nx1)
+                        #w.play.setNextSound()
+                        pass
+        
+        tmp_one_score_x = (50 - self.now_x) % self.one_x
+        tmp_one_fourth_score_x = (50 - self.now_x) % self.one_fourth_x
+      
+      
+        # どこに縦棒を表示するか計算
+        self.note_one_x = []
+        self.note_one_fourth_x = []
+        while True:
+            if tmp_one_score_x > self.min_score_x:
+                self.note_one_x.append(tmp_one_score_x)
+            if tmp_one_score_x> self.max_score_x:
+                break
+            tmp_one_score_x += self.one_x
+        while True:
+            if tmp_one_fourth_score_x > self.min_score_x:
+                self.note_one_fourth_x.append(tmp_one_fourth_score_x)
+            if tmp_one_fourth_score_x > self.max_score_x:
+                break
+            tmp_one_fourth_score_x += self.one_fourth_x
+
 
     def paint(self, w, painter):
         painter.setPen(QPen(color.blue, 2))
-        painter.drawLine(QPoint(50, 400 - 200), QPoint(50, 400 + 200))
+        painter.drawLine(QPoint(50, self.note_y_center - 200), QPoint(50, self.note_y_center + 200))
 
+        # 縦棒の描画
         painter.setPen(QPen(color.black, 2))
         for x in self.note_one_x:
-            painter.drawLine(QPoint(x, 400 - 30), QPoint(x, 400 + 30))
+            painter.drawLine(QPoint(x, self.note_y_center - 30), QPoint(x, self.note_y_center + 30))
         for x in self.note_one_fourth_x:
-            painter.drawLine(QPoint(x, 400 - 20), QPoint(x, 400 + 20))
+            painter.drawLine(QPoint(x, self.note_y_center - 15), QPoint(x, self.note_y_center + 15))
+
+        # 音符の描画
+        for s in self.sound_labels:
+            s.clear()
+        self.sound_labels = []
+        painter.setBrush(color.white)
+        painter.setPen(QPen(color.green, 3))
+        for notes in self.note:
+            for n in notes:
+                if n == []:
+                    break
+                nx1 = self.min_score_x - self.now_x + n[1]
+                if n[2] == -1:
+                    break
+                    #nx2 = self.min_score_x - self.now_x
+                else:
+                    nx2 = self.min_score_x - self.now_x + n[2]
+                if nx1 < self.max_score_x and nx2 > self.min_score_x:
+                    sound_label = QLabel(n[0], w)
+                    sound_label.move(nx1, self.note_y_center - 16)
+                    sound_label.setFixedWidth(10)
+                    sound_label.setFixedWidth(10)
+                    self.sound_labels.append(sound_label)
+                    #sound_label.show()
+
+                    painter.drawRect(nx1, self.note_y_center - 8, nx2 - nx1, 16)
+
+        # 鍵盤の描画
+        painter.setPen(QPen(color.black, 2))
+        painter.drawLine(QPoint(60, 550), QPoint(900, 550))
+        painter.drawLine(QPoint(60, 700), QPoint(900, 700))
+        painter.drawLine(QPoint(60, 550), QPoint(60, 700))
+        painter.drawLine(QPoint(900, 550), QPoint(900, 700))
+        painter.setBrush(color.white)
+        for i in range(21):
+            x = (900 - 60) / 21.0 * i + 60
+            step = (900 - 60) / 21.0
+            painter.drawRect(x, 550, step, 700 - 550)
+        painter.setBrush(color.black)
+        for i in range(21 - 1):
+            if i % 7 == 2 or i % 7 == 6:
+                continue
+            x = (900 - 60) / 21.0 * (i + 0.8) + 60
+            step = (900 - 60) / 21.0 * 0.4
+            painter.drawRect(x, 550, step, 650 - 550)
+
+        # 余計な部分を消す
+        painter.setPen(QPen(color.origin, 2))
+        painter.setBrush(color.origin)
+        painter.drawRect(0, self.note_y_center -200, 50 - 1, 400)
+        painter.drawRect(900, self.note_y_center -200, 960 - 900, 400)
+
