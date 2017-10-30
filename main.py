@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import QMainWindow, QPushButton, QFrame, QApplication, QLineEdit
 from PyQt5.QtGui import QPainter
-from PyQt5.QtCore import QEvent
+from PyQt5.QtCore import QEvent, QObject
 
 import sys, signal, time
 import play
@@ -16,7 +16,7 @@ class MyWindow(QMainWindow):
 
         self.t = time.time()
         self.show()
-        
+
     def mouseMoveEvent(self, mouse_event):
         self.event.mouseMove(mouse_event, self)
 

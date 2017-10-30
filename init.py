@@ -11,8 +11,6 @@ def init(w):
 
     initItem(w)
 
-    w.setMouseTracking(True)
-
 def initValue(w):
     w.mode = 0 # 0:停止 1:入力 2:再生
     w.octet_num = 1 # 何重奏
@@ -22,6 +20,8 @@ def initValue(w):
     w.beat_nume = 4 # 拍子の分子 not implemented
     
     w.play = play.Play()
+
+    w.setMouseTracking(True)
     
 def initUI(w):
     initMenubar(w)

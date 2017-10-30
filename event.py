@@ -6,18 +6,22 @@ class Event:
 
     def __init__(self):
         self.note_log = open('note.log', 'w')
-        self.on_note_id = -1
-        self.selected_note_id = -1
+        self.on_note_id = -1 # カーソル上にある音符
+        self.selected_note_id = -1 # 選択中の音符
 
     def mouseMove(self, mouse_event, w):
         mouse_pos = mouse_event.pos()
+        print(mouse_pos.x(), mouse_pos.y())
         # 音符
         for notes in w.note.note:
             for i in range(len(notes)):
                 note = notes[i]
-                if note[2] > mouse_pos.x() and note[1] < mouse_pos.x():
+                nx1 = w.note.min_score_x - w.note.now_x + note[1]
+                nx2 = w.note.min_score_x - w.note.now_x + note[2]
+                #print(nx1, nx2)
+                if nx2 > mouse_pos.x() and nx1 < mouse_pos.x():
                     if w.note.note_y_center + 8 > mouse_pos.y() and w.note.note_y_center - 8 < mouse_pos.y():
-                        self.on_note_id = i - 1
+                        self.on_note_id = i
 
     def mousePress(self, mouse_event, w):
         mouse_pos = mouse_event.pos()

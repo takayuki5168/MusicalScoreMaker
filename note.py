@@ -139,6 +139,7 @@ class Note:
                         #sound_label.setFixedWidth(10)
                         sound_label.setFixedWidth(20)
                         self.sound_labels.append(sound_label)
+                        sound_label.setMouseTracking(True)
                         sound_label.show()
 
                     painter.drawRect(nx1, self.note_y_center - 8, nx2 - nx1, 16)
