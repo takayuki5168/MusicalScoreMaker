@@ -4,10 +4,12 @@ import math
 
 class Play():
     def __init__(self):
-        super(Play, self).__init__()
         self.key_name = ['C1', 'D1', 'E1', 'F1', 'G1', 'A1', 'B1', 'C2', 'D2', 'E2', 'F2', 'G2', 'A2', 'B2', 'C3', 'D3', 'E3', 'F3', 'G3', 'A3', 'B3']
-        self.key_diff = [-9, -7, -5, -4, -2, 0, 2, 3, 5, 7, 8, 10, 12, 14, 15, 17, 19, 20, 22, 24, 26]
-        self.key_diff = [x - 12 for x in self.key_diff]
+        self.key_name += ['C1s', 'D1s', 'E1s', 'F1s', 'G1s', 'A1s', 'B1s', 'C2s', 'D2s', 'E2s', 'F2s', 'G2s', 'A2s', 'B2s', 'C3s', 'D3s', 'E3s', 'F3s', 'G3s', 'A3s', 'B3s']
+        self.key_name += ['C1f', 'D1f', 'E1f', 'F1f', 'G1f', 'A1f', 'B1f', 'C2f', 'D2f', 'E2f', 'F2f', 'G2f', 'A2f', 'B2f', 'C3f', 'D3f', 'E3f', 'F3f', 'G3f', 'A3f', 'B3f']
+        self.key_diff_root = [-9, -7, -5, -4, -2, 0, 2, 3, 5, 7, 8, 10, 12, 14, 15, 17, 19, 20, 22, 24, 26]
+        self.key_diff_root = [x - 12 for x in self.key_diff_root]
+        self.key_diff = self.key_diff_root + [x + 1 for x in self.key_diff_root] + [x - 1 for x in self.key_diff_root]
         self.key_freq = {}
         for key, diff in zip(self.key_name, self.key_diff):
             self.key_freq[key] = 440.0 * math.pow(2, diff / 12.0)
@@ -38,7 +40,8 @@ class Play():
         chunk = np.concatenate(chunks) * 0.25
         self.stream.write(chunk.astype(np.float32).tostring())
 
-    def playPiano(self, i, length = 100):
+    def playPiano(self, i, length = 20):
+        print(self.key_name[i])
         self.play_chord(self.key_name[i], length)
     
     def test(self, sound):

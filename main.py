@@ -14,11 +14,11 @@ class MyWindow(QMainWindow):
 
         signal.signal(signal.SIGINT, self.sigIntHandler)
 
-        #self.play = play.Play(self.stream)
-        #self.play.start()
-        
         self.t = time.time()
         self.show()
+        
+    def mouseMoveEvent(self, mouse_event):
+        self.event.mouseMove(mouse_event, self)
 
     def mousePressEvent(self, mouse_event):
         self.event.mousePress(mouse_event, self)
@@ -29,13 +29,7 @@ class MyWindow(QMainWindow):
     def paintEvent(self, event):
         delta_t = 1000 * time.time() - self.t
         self.t = 1000 * time.time()
-        ##self.timer.start(1000 * (0.01 / delta_t))
-        #self.time_step = 10 / delta_t
-        #print(delta_t, self.time_step, self.note.forward_x_step)
-        #print(self.note.forward_x_step * self.time_step)
-        #self.timer.start(self.time_step)
         self.note.forward_x_step = self.tempo / 60.0 * self.note.one_fourth_x * delta_t / 1000 * self.input_speed
-        #self.note.forward_x_step = self.tempo / 60.0 * self.note.one_fourth_x * self.time_step / 1000 * self.input_speed
         
         self.note.update(self)
 

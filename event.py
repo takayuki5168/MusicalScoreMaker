@@ -6,16 +6,45 @@ class Event:
 
     def __init__(self):
         self.note_log = open('note.log', 'w')
+        self.on_note_id = -1
+        self.selected_note_id = -1
+
+    def mouseMove(self, mouse_event, w):
+        mouse_pos = mouse_event.pos()
+        # 音符
+        for notes in w.note.note:
+            for i in range(len(notes)):
+                note = notes[i]
+                if note[2] > mouse_pos.x() and note[1] < mouse_pos.x():
+                    if w.note.note_y_center + 8 > mouse_pos.y() and w.note.note_y_center - 8 < mouse_pos.y():
+                        self.on_note_id = i - 1
 
     def mousePress(self, mouse_event, w):
         mouse_pos = mouse_event.pos()
-        if (mouse_pos.y() > 550 and mouse_pos.y() < 700):
+
+        if self.on_note_id != -1:
+            self.selected_note_id = self.on_note_id
+
+        # 黒鍵盤
+        if (mouse_pos.y() > 550 and mouse_pos.y() < 650):
+            for i in range(21 - 1):
+                if i % 7 == 2 or i % 7 == 6:
+                    continue
+                s_x = (900 - 60) / 21.0 * (i + 0.8) + 60
+                e_x = (900 - 60) / 21.0 * (i + 0.4 + 0.8) + 60
+                if mouse_pos.x() > s_x and mouse_pos.x() < e_x:
+                    w.play.playPiano(21 + i)
+                    w.note.note[0][self.selected_note_id][0] = w.note.key_name[21 + i] # TODO
+                    break
+
+        # 白鍵盤
+        elif (mouse_pos.y() > 550 and mouse_pos.y() < 700):
             for i in range(21):
                 s_x = (900 - 60) / 21.0 * i + 60
                 e_x = (900 - 60) / 21.0 * (i + 1) + 60
                 if mouse_pos.x() > s_x and mouse_pos.x() < e_x:
-                    print('po')
                     w.play.playPiano(i)
+                    w.note.note[0][self.selected_note_id][0] = w.note.key_name[i] # TODO
                     break
                 
 
