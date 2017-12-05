@@ -12,11 +12,15 @@ TEMPLATE = app
 SOURCES += src/main.cpp             \
            src/mainwindow.cpp    \
            src/event.cpp    \
-           src/note.cpp
+           src/note.cpp     \
+           src/basic_params.cpp
 
 HEADERS  += src/mainwindow.hpp    \
             src/event.hpp    \
-            src/note.hpp
+            src/note.hpp \
+            src/mode.hpp \
+            src/math_util.hpp   \
+            src/basic_params.hpp
 
 INCLUDEPATH += src              \
                /usr/local/include
