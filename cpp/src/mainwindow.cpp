@@ -111,13 +111,13 @@ void MainWindow::paintEvent(QPaintEvent* /*paint_event*/)
 
                     // 色の設定
                     painter.setPen(QPen(m_color.green, 4));
+                    if (note == m_event_manager->getOnNote()) {
+                        painter.setPen(QPen(m_color.skyblue, 4));
+                    }
                     for (auto selected_note : m_event_manager->getSelectedNote()) {
                         if (note == selected_note) {
                             painter.setPen(QPen(m_color.blue, 4));
                         }
-                    }
-                    if (note == m_event_manager->getOnNote()) {
-                        painter.setPen(QPen(m_color.skyblue, 4));
                     }
 
                     if (note->end_x < 0) {

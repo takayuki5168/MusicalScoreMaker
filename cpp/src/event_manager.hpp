@@ -44,16 +44,7 @@ public:
                     double nx1 = BasicParams::min_score_x - m_note_manager->getNowX() + note->start_x;
                     double nx2 = BasicParams::min_score_x - m_note_manager->getNowX() + note->end_x;
                     if (nx2 > mouse_pos.x() and nx1 < mouse_pos.x()) {
-                        bool is_selected = false;
-                        for (auto selected_note : m_selected_note) {
-                            if (selected_note == note) {
-                                is_selected = true;
-                                break;
-                            }
-                        }
-                        if (not is_selected) {
-                            m_on_note = note;
-                        }
+                        m_on_note = note;
                         break;
                     }
                 }
@@ -126,22 +117,22 @@ public:
 
     void keyPress(const QKeyEvent* key_event)
     {
-        // Controlの判定
+        // Controlが押されているか判定
         m_control_is_pressed = false;
         if (key_event->modifiers().testFlag(Qt::ControlModifier)) {
             m_control_is_pressed = true;
         }
-        // Shiftの判定
+        // Shiftが押されているか判定
         m_shift_is_pressed = false;
         if (key_event->modifiers().testFlag(Qt::ShiftModifier)) {
             m_shift_is_pressed = true;
         }
 
-
         // エンターで音符生成
         if (key_event->key() == Qt::Key_Return) {
             if (m_note_manager->getNowX() > 0) {
-                if (m_note_manager->getNote().at(m_selected_octet).size() > 0) {
+                if (m_note_manager->getNote().at(m_selected_octet).size() > 0
+                    and m_note_manager->getNote().at(m_selected_octet).back()->end_x < 0) {
                     m_note_manager->getNote().at(m_selected_octet).back()->end_x = m_note_manager->getNowX();
                 }
                 m_note_manager->addNote(m_selected_octet, std::make_shared<NoteManager::Note>(m_note_manager->getNowX(), -1, 0));
@@ -151,7 +142,18 @@ public:
         // Zで再生か停止か
         if (key_event->key() == Qt::Key_Z) {
             m_selected_is_note = false;
+            m_selected_note.clear();
             Mode::start_or_not = not Mode::start_or_not;
+            if (not Mode::start_or_not) {  // 停止になった瞬間にend_xが負である音符を削除
+                auto note = m_note_manager->getNote();
+                for (unsigned int i = 0; i < note.size(); i++) {
+                    for (unsigned int j = 0; j < note.at(i).size(); j++) {
+                        if (note.at(i).at(j)->end_x < 0) {
+                            m_note_manager->eraseNote(i, j);
+                        }
+                    }
+                }
+            }
         }
 
         // WASDで選択する音符または譜面の移動
@@ -162,11 +164,23 @@ public:
             if (Mode::mode == Mode::Mode::Input and Mode::start_or_not == false) {
                 if (m_selected_is_note) {  // 音符の移動
                     if (m_selected_note.size() == 1) {
-                        std::vector<std::shared_ptr<NoteManager::Note>> note = m_note_manager->getNote().at(m_selected_octet);
-                        for (unsigned int i = 0; i < note.size(); i++) {
-                            if (m_selected_note.at(0) == note.at(i)) {
-                                if (i != note.size() - 1) {
-                                    m_selected_note.at(0) = note.at(i + 1);
+                        std::vector<std::vector<std::shared_ptr<NoteManager::Note>>> note = m_note_manager->getNote();
+                        int selected_octet = -1;
+                        for (unsigned int i = 0; i < note.size(); i++) {  // selected_octetの探索
+                            for (unsigned int j = 0; j < note.at(i).size(); j++) {
+                                if (note.at(i).at(j) == m_selected_note.at(0)) {
+                                    selected_octet = i;
+                                    break;
+                                }
+                            }
+                            if (selected_octet >= 0) {
+                                break;
+                            }
+                        }
+                        for (unsigned int i = 0; i < note.at(selected_octet).size(); i++) {
+                            if (m_selected_note.at(0) == note.at(selected_octet).at(i)) {
+                                if (i != note.at(selected_octet).size() - 1) {
+                                    m_selected_note.at(0) = note.at(selected_octet).at(i + 1);
                                     break;
                                 }
                             }
@@ -180,11 +194,23 @@ public:
             if (Mode::mode == Mode::Mode::Input and Mode::start_or_not == false) {
                 if (m_selected_is_note) {  // 音符の移動
                     if (m_selected_note.size() == 1) {
-                        std::vector<std::shared_ptr<NoteManager::Note>> note = m_note_manager->getNote().at(m_selected_octet);
-                        for (unsigned int i = 0; i < note.size(); i++) {
-                            if (m_selected_note.at(0) == note.at(i)) {
+                        std::vector<std::vector<std::shared_ptr<NoteManager::Note>>> note = m_note_manager->getNote();
+                        int selected_octet = -1;
+                        for (unsigned int i = 0; i < note.size(); i++) {  // selected_octetの探索
+                            for (unsigned int j = 0; j < note.at(i).size(); j++) {
+                                if (note.at(i).at(j) == m_selected_note.at(0)) {
+                                    selected_octet = i;
+                                    break;
+                                }
+                            }
+                            if (selected_octet >= 0) {
+                                break;
+                            }
+                        }
+                        for (unsigned int i = 0; i < note.at(selected_octet).size(); i++) {
+                            if (m_selected_note.at(0) == note.at(selected_octet).at(i)) {
                                 if (i != 0) {
-                                    m_selected_note.at(0) = note.at(i - 1);
+                                    m_selected_note.at(0) = note.at(selected_octet).at(i - 1);
                                     break;
                                 }
                             }
@@ -201,9 +227,24 @@ public:
                 saveNoteLog();
             }
         }
+
+        if (key_event->key() == Qt::Key_Delete) {
+            std::vector<std::vector<std::shared_ptr<NoteManager::Note>>> note = m_note_manager->getNote();
+            for (auto selected_note : m_selected_note) {
+                for (unsigned int i = 0; i < note.size(); i++) {
+                    for (unsigned int j = 0; j < note.at(i).size(); j++) {
+                        if (note.at(i).at(j) == selected_note) {
+                            m_note_manager->eraseNote(i, j);
+                        }
+                    }
+                }
+            }
+            m_selected_note.clear();
+        }
     }
 
-    void keyRelease(const QKeyEvent* key_event)
+    void
+    keyRelease(const QKeyEvent* key_event)
     {
         // Controlの判定
         if (key_event->key() == Qt::Key_Control) {
@@ -243,7 +284,7 @@ private:
     std::shared_ptr<NoteManager::Note> m_on_note;                     //!< カーソル上の音符
 
     bool m_selected_is_note = false;  //!< 選択中の音符
-    int m_selected_octet = 0;         //!< 選択している奏
+    int m_selected_octet = 0;         //!< 入力時に選択している奏(選択中の音符の奏ではないのに注意)
 
     bool m_control_is_pressed = false;
     bool m_shift_is_pressed = false;
