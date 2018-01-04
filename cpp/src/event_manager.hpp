@@ -22,12 +22,25 @@ public:
         mouse_pos = mouse_event->pos();
 
         // カーソル上の音符を更新
+        std::vector<int> y_pos;
+        if (BasicParams::octet_num == 1) {
+            y_pos = {0};
+        } else if (BasicParams::octet_num == 2) {
+            y_pos = {static_cast<int>(-BasicParams::frame_y_length / 8), static_cast<int>(BasicParams::frame_y_length / 8)};
+        } else if (BasicParams::octet_num == 3) {
+            y_pos = {static_cast<int>(-BasicParams::frame_y_length / 4), 0, static_cast<int>(BasicParams::frame_y_length / 4)};
+        } else if (BasicParams::octet_num == 4) {
+            y_pos = {
+                static_cast<int>(-BasicParams::frame_y_length / 10 * 3), static_cast<int>(-BasicParams::frame_y_length / 10 * 1),
+                static_cast<int>(BasicParams::frame_y_length / 10 * 1), static_cast<int>(BasicParams::frame_y_length / 10 * 3)};
+        }
+
         m_on_note = nullptr;
         for (unsigned int i = 0; i < m_note_manager->getNote().size(); i++) {
             for (unsigned int j = 0; j < m_note_manager->getNote().at(i).size(); j++) {
                 std::shared_ptr<NoteManager::Note> note = m_note_manager->getNote().at(i).at(j);
-
-                if (BasicParams::frame_y_center + 8 > mouse_pos.y() and BasicParams::frame_y_center - 8 < mouse_pos.y()) {
+                if (BasicParams::frame_y_center + y_pos.at(i) + BasicParams::note_height / 2 > mouse_pos.y()
+                    and BasicParams::frame_y_center + y_pos.at(i) - BasicParams::note_height / 2 < mouse_pos.y()) {
                     double nx1 = BasicParams::min_score_x - m_note_manager->getNowX() + note->start_x;
                     double nx2 = BasicParams::min_score_x - m_note_manager->getNowX() + note->end_x;
                     if (nx2 > mouse_pos.x() and nx1 < mouse_pos.x()) {
@@ -127,11 +140,12 @@ public:
 
         // エンターで音符生成
         if (key_event->key() == Qt::Key_Return) {
-            // TODO 音符end_xを直後の音符のstart_xに
-            if (m_note_manager->getNote().at(m_selected_octet).size() > 0) {
-                m_note_manager->getNote().at(m_selected_octet).back()->end_x = m_note_manager->getNowX();
+            if (m_note_manager->getNowX() > 0) {
+                if (m_note_manager->getNote().at(m_selected_octet).size() > 0) {
+                    m_note_manager->getNote().at(m_selected_octet).back()->end_x = m_note_manager->getNowX();
+                }
+                m_note_manager->addNote(m_selected_octet, std::make_shared<NoteManager::Note>(m_note_manager->getNowX(), -1, 0));
             }
-            m_note_manager->addNote(m_selected_octet, std::make_shared<NoteManager::Note>(m_note_manager->getNowX(), -1, 0));
         }
 
         // Zで再生か停止か

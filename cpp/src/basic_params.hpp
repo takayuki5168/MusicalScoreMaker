@@ -14,4 +14,6 @@ extern double max_score_x;
 extern double min_score_x;
 extern double frame_y_center;
 extern double frame_y_length;
+
+extern double note_height;
 }

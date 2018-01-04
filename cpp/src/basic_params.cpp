@@ -14,4 +14,6 @@ double max_score_x = 900;
 double min_score_x = 50;
 double frame_y_center = 310;
 double frame_y_length = 400;
+
+double note_height = 20;
 }
