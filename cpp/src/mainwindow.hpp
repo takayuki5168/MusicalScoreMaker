@@ -2,12 +2,16 @@
 
 #include <memory>
 #include <chrono>
+#include <fstream>
+#include <sstream>
+#include <string>
 #include <QMainWindow>
 #include <QTimer>
 #include <QEvent>
 //#include <QMouseEvent>
 #include <QPushButton>
 #include <QLabel>
+#include <QTextCodec>
 #include "event_manager.hpp"
 #include "note_manager.hpp"
 #include "mode.hpp"
@@ -77,7 +81,80 @@ private:
     void mouseMoveEvent(QMouseEvent* mouse_event) override { m_event_manager->mouseMove(mouse_event); }
     void mousePressEvent(QMouseEvent* mouse_event) override { m_event_manager->mousePress(mouse_event); }
     void keyPressEvent(QKeyEvent* key_event) override { m_event_manager->keyPress(key_event); }
+    void keyReleaseEvent(QKeyEvent* key_event) override { m_event_manager->keyRelease(key_event); }
     void paintEvent(QPaintEvent* paint_event) override;
+
+    void readNote()
+    {
+        m_note_manager->clearNote();
+        std::cout << "po" << std::endl;
+        m_coord.clear();
+        std::ifstream note_log;
+        note_log.open("note.log");
+
+        std::string str;
+        int all_cnt = 0;
+        while (getline(note_log, str)) {
+            int cnt = 0;
+            int start_x, end_x, sound;
+            std::stringstream ss(str);
+            std::string item;
+            if (all_cnt != 0) {
+                m_note_manager->addOctet();
+            }
+            while (getline(ss, item, ' ') and !item.empty()) {
+                if (all_cnt == 0) {
+                    QTextCodec* tc = QTextCodec::codecForLocale();
+                    m_coord.push_back(QString(tc->toUnicode(item.c_str())));
+                } else {
+                    if (cnt % 3 == 0) {
+                        start_x = std::stod(item);
+                    } else if (cnt % 3 == 1) {
+                        end_x = std::stod(item);
+                    } else {
+                        sound = std::stoi(item);
+                        std::shared_ptr<NoteManager::Note> note = std::make_shared<NoteManager::Note>(start_x, end_x, sound);
+                        m_note_manager->addNote(all_cnt - 1, note);
+                    }
+                    cnt++;
+                }
+            }
+            all_cnt++;
+        }
+        BasicParams::octet_num = all_cnt - 1;
+    }
+
+    void readCoord()
+    {
+        m_coord.clear();
+        std::ifstream coord_log;
+        coord_log.open("coord.log");
+
+        std::string str;
+        while (getline(coord_log, str)) {
+            std::stringstream ss(str);
+            std::string item;
+            for (unsigned int i = 0; i < str.size(); i++) {
+                while (getline(ss, item, ' ') and !item.empty()) {
+                    QTextCodec* tc = QTextCodec::codecForLocale();
+                    m_coord.push_back(QString(tc->toUnicode(item.c_str())));
+                }
+            }
+        }
+    }
+
+
+    int rangeInt(double num)
+    {
+        int num_int = static_cast<int>(num);
+        if (num - num_int > 0.5) {
+            return num_int + 1;
+        } else if (num_int - num > 0.5) {
+            return num_int - 1;
+        } else {
+            return num_int;
+        }
+    }
 
     struct Color {
         QColor origin = QColor(240, 240, 240);
@@ -111,6 +188,8 @@ private:
     std::unique_ptr<EventManager> m_event_manager = nullptr;
     std::shared_ptr<NoteManager> m_note_manager = nullptr;
     std::vector<std::shared_ptr<QLabel>> m_sound_label;
+    std::vector<std::shared_ptr<QLabel>> m_coord_label;
+    std::vector<QString> m_coord;
 };
 
 inline MainWindow& mainWindow() { return MainWindow::instance(); }

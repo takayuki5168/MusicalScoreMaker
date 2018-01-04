@@ -38,6 +38,13 @@ public:
 
     // 音符の追加, getter, setter関数
     void addNote(int octet, std::shared_ptr<Note> note) { m_note.at(octet).push_back(std::move(note)); }
+    void addOctet() { m_note.resize(m_note.size() + 1); }
+    void clearNote()
+    {
+        for (int i = 0; i < BasicParams::octet_num; i++) {
+            m_note.at(i).clear();
+        }
+    }
     std::vector<std::vector<std::shared_ptr<Note>>> getNote() { return m_note; }
     void setSound(int octet, int idx, int sound) { m_note.at(octet).at(idx)->sound = sound; }
 
@@ -62,7 +69,7 @@ private:
     Params m_params;
 
     double m_pre_x = 0;
-    double m_now_x = 0;  //!< 譜面のx座標
+    double m_now_x = -210;  //!< 譜面のx座標
 
     std::vector<double> m_one_x_vector;
     std::vector<double> m_one_fourth_x_vector;

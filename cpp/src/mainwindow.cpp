@@ -10,8 +10,13 @@
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent), m_timer(new QTimer)
 {
-    m_note_manager = std::make_shared<NoteManager>();  //m_note_x_vector, m_note_fourth_vector, m_notes_list);
+    m_note_manager = std::make_shared<NoteManager>();
     m_event_manager = std::make_unique<EventManager>(m_note_manager);
+
+    // TODO ボタンから操作できるように
+    //readCoord();
+    //std::cout << m_coord.size() << std::endl;
+    readNote();
 
     setGeometry(200, 0, 960, 720);
     setWindowTitle("MusicalScoreMaker");
@@ -70,15 +75,29 @@ void MainWindow::paintEvent(QPaintEvent* /*paint_event*/)
 
     {      // Noteクラスの描画
         {  // 縦線群の描画
-            auto po = m_note_manager->getOneXVector();
+            //auto po = m_note_manager->getOneXVector();
             painter.setPen(QPen(m_color.black, 2));
+            m_coord_label.clear();
             for (int y : y_pos) {
                 for (const double& x : m_note_manager->getOneXVector()) {
+                    if (y == y_pos.at(0)) {  // 表示するコードの更新
+                        unsigned int coord_idx = rangeInt((x + m_note_manager->getNowX() - 50) / 200.0);
+                        if (coord_idx < m_coord.size()) {
+                            std::shared_ptr<QLabel> coord_label = std::make_shared<QLabel>(m_coord.at(coord_idx), this);
+                            coord_label->move(x + 5, y + 310 - 40);
+                            coord_label->setFixedWidth(30);
+                            m_coord_label.push_back(coord_label);
+                        }
+                    }
+
                     painter.drawLine(x, y + 310 - 30, x, y + 310 + 30);
                 }
                 for (const double& x : m_note_manager->getOneFourthXVector()) {
                     painter.drawLine(x, y + 310 - 15, x, y + 310 + 15);
                 }
+            }
+            for (auto coord_label : m_coord_label) {  // コードの表示
+                coord_label->show();
             }
         }
 
@@ -91,14 +110,14 @@ void MainWindow::paintEvent(QPaintEvent* /*paint_event*/)
                     std::shared_ptr<NoteManager::Note> note = m_note_manager->getNote().at(i).at(j);
 
                     // 色の設定
-                    painter.setPen(QPen(m_color.green, 3));
+                    painter.setPen(QPen(m_color.green, 4));
                     for (auto selected_note : m_event_manager->getSelectedNote()) {
                         if (note == selected_note) {
-                            painter.setPen(QPen(m_color.blue, 3));
+                            painter.setPen(QPen(m_color.blue, 4));
                         }
                     }
                     if (note == m_event_manager->getOnNote()) {
-                        painter.setPen(QPen(m_color.skyblue, 3));
+                        painter.setPen(QPen(m_color.skyblue, 4));
                     }
 
                     if (note->end_x < 0) {
@@ -109,7 +128,7 @@ void MainWindow::paintEvent(QPaintEvent* /*paint_event*/)
                     double nx2 = BasicParams::min_score_x - m_note_manager->getNowX() + note->end_x;
                     if (nx1 < BasicParams::max_score_x and nx2 > BasicParams::min_score_x) {
                         if (nx2 < BasicParams::max_score_x and nx1 > BasicParams::min_score_x) {
-                            painter.drawRect(nx1, y_pos.at(i) + BasicParams::frame_y_center - 8, nx2 - nx1, 16);
+                            painter.drawRect(nx1, y_pos.at(i) + BasicParams::frame_y_center - 10, nx2 - nx1, 20);
                             std::shared_ptr<QLabel> sound_label = std::make_shared<QLabel>(m_note_manager->getNoteSound(note->sound), this);
                             sound_label->move(nx1, y_pos.at(i) + BasicParams::frame_y_center - 16);
                             sound_label->setFixedWidth(30);

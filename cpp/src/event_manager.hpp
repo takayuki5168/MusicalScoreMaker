@@ -1,14 +1,15 @@
 #pragma once
 
 #include <memory>
+#include <fstream>
 #include <QMainWindow>
 #include <QEvent>
 #include <QMouseEvent>
 #include "../src/basic_params.hpp"
 #include "../src/note_manager.hpp"
 
-/*
- * 入力イベントを扱うクラス
+/*!
+ * @brief   入力イベントを扱うクラス
  */
 class EventManager
 {
@@ -100,7 +101,10 @@ public:
                             break;
                         }
                     }
-                } else {  // まだ選択されていなかったら選択
+                } else {  // まだ選択されていなかったら選択(他をすべて消すかはシフトを押しているか)
+                    if (not m_shift_is_pressed) {
+                        m_selected_note.clear();
+                    }
                     m_selected_note.push_back(m_on_note);
                 }
             }
@@ -109,11 +113,17 @@ public:
 
     void keyPress(const QKeyEvent* key_event)
     {
-        // シフトの判定
-        //bool shift_is_pressed = false;
-        if (key_event->modifiers().testFlag(Qt::ShiftModifier)) {
-            //shift_is_pressed = true;
+        // Controlの判定
+        m_control_is_pressed = false;
+        if (key_event->modifiers().testFlag(Qt::ControlModifier)) {
+            m_control_is_pressed = true;
         }
+        // Shiftの判定
+        m_shift_is_pressed = false;
+        if (key_event->modifiers().testFlag(Qt::ShiftModifier)) {
+            m_shift_is_pressed = true;
+        }
+
 
         // エンターで音符生成
         if (key_event->key() == Qt::Key_Return) {
@@ -171,6 +181,38 @@ public:
                 }
             }
         }
+
+        if (m_control_is_pressed) {               // コントロールが押されている
+            if (key_event->key() == Qt::Key_S) {  // 保存
+                saveNoteLog();
+            }
+        }
+    }
+
+    void keyRelease(const QKeyEvent* key_event)
+    {
+        // Controlの判定
+        if (key_event->modifiers().testFlag(Qt::ControlModifier)) {
+            m_control_is_pressed = false;
+        }
+        // Shiftの判定
+        if (key_event->modifiers().testFlag(Qt::ShiftModifier)) {
+            m_shift_is_pressed = false;
+        }
+    }
+
+    // 音符のログを保存する
+    void saveNoteLog()
+    {
+        std::ofstream note_log;
+        note_log.open("note.log", std::fstream::out | std::fstream::trunc);
+        auto note = m_note_manager->getNote();
+        for (int i = 0; i < BasicParams::octet_num; i++) {
+            for (auto n : note.at(i)) {
+                note_log << n->start_x << " " << n->end_x << " " << n->sound << " ";
+            }
+            note_log << std::endl;
+        }
     }
 
     // getter関数
@@ -183,6 +225,9 @@ private:
 
     bool m_selected_is_note = false;  //!< 選択中の音符
     int m_selected_octet = 0;         //!< 選択している奏
+
+    bool m_control_is_pressed = false;
+    bool m_shift_is_pressed = false;
 
     QPoint mouse_pos;
     std::shared_ptr<NoteManager> m_note_manager = nullptr;  //!< MainWindowのm_note_managerをshared_ptrとして持つ
