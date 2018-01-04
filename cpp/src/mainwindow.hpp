@@ -87,8 +87,7 @@ private:
     void readNote()
     {
         m_note_manager->clearNote();
-        std::cout << "po" << std::endl;
-        m_coord.clear();
+        m_note_manager->clearCoord();
         std::ifstream note_log;
         note_log.open("note.log");
 
@@ -103,10 +102,10 @@ private:
                 m_note_manager->addOctet();
             }
             while (getline(ss, item, ' ') and !item.empty()) {
-                if (all_cnt == 0) {
+                if (all_cnt == 0) {  // コード
                     QTextCodec* tc = QTextCodec::codecForLocale();
-                    m_coord.push_back(QString(tc->toUnicode(item.c_str())));
-                } else {
+                    m_note_manager->addCoord(QString(tc->toUnicode(item.c_str())));
+                } else {  // 音符
                     if (cnt % 3 == 0) {
                         start_x = std::stod(item);
                     } else if (cnt % 3 == 1) {
@@ -126,7 +125,7 @@ private:
 
     void readCoord()
     {
-        m_coord.clear();
+        m_note_manager->clearCoord();
         std::ifstream coord_log;
         coord_log.open("coord.log");
 
@@ -137,7 +136,7 @@ private:
             for (unsigned int i = 0; i < str.size(); i++) {
                 while (getline(ss, item, ' ') and !item.empty()) {
                     QTextCodec* tc = QTextCodec::codecForLocale();
-                    m_coord.push_back(QString(tc->toUnicode(item.c_str())));
+                    m_note_manager->addCoord(QString(tc->toUnicode(item.c_str())));
                 }
             }
         }
@@ -189,7 +188,6 @@ private:
     std::shared_ptr<NoteManager> m_note_manager = nullptr;
     std::vector<std::shared_ptr<QLabel>> m_sound_label;
     std::vector<std::shared_ptr<QLabel>> m_coord_label;
-    std::vector<QString> m_coord;
 };
 
 inline MainWindow& mainWindow() { return MainWindow::instance(); }

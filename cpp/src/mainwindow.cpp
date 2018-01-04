@@ -82,8 +82,8 @@ void MainWindow::paintEvent(QPaintEvent* /*paint_event*/)
                 for (const double& x : m_note_manager->getOneXVector()) {
                     if (y == y_pos.at(0)) {  // 表示するコードの更新
                         unsigned int coord_idx = rangeInt((x + m_note_manager->getNowX() - 50) / 200.0);
-                        if (coord_idx < m_coord.size()) {
-                            std::shared_ptr<QLabel> coord_label = std::make_shared<QLabel>(m_coord.at(coord_idx), this);
+                        if (coord_idx < m_note_manager->getCoord().size()) {
+                            std::shared_ptr<QLabel> coord_label = std::make_shared<QLabel>(m_note_manager->getCoord().at(coord_idx), this);
                             coord_label->move(x + 5, y + 310 - 40);
                             coord_label->setFixedWidth(30);
                             m_coord_label.push_back(coord_label);

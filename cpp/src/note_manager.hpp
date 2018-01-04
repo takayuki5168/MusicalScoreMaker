@@ -36,7 +36,7 @@ public:
     void updateNowX(double x) { m_now_x += x; }
     double getNowX() { return m_now_x; }
 
-    // 音符の追加, getter, setter関数
+    // 音符の追加, getter, setter関数 TODO addをx座標の順番にする
     void addNote(int octet, std::shared_ptr<Note> note) { m_note.at(octet).push_back(std::move(note)); }
     void addOctet() { m_note.resize(m_note.size() + 1); }
     void clearNote()
@@ -46,6 +46,9 @@ public:
         }
     }
     std::vector<std::vector<std::shared_ptr<Note>>> getNote() { return m_note; }
+    void addCoord(QString coord) { m_coord.push_back(coord); }
+    std::vector<QString> getCoord() { return m_coord; }
+    void clearCoord() { m_coord.clear(); }
     void setSound(int octet, int idx, int sound) { m_note.at(octet).at(idx)->sound = sound; }
 
     // getter関数
@@ -74,6 +77,7 @@ private:
     std::vector<double> m_one_x_vector;
     std::vector<double> m_one_fourth_x_vector;
     std::vector<std::vector<std::shared_ptr<Note>>> m_note;  //!< 音符
+    std::vector<QString> m_coord;                            //!< コード
 
     std::vector<QString> m_note_sound;
 };

@@ -206,11 +206,11 @@ public:
     void keyRelease(const QKeyEvent* key_event)
     {
         // Controlの判定
-        if (key_event->modifiers().testFlag(Qt::ControlModifier)) {
+        if (key_event->key() == Qt::Key_Control) {
             m_control_is_pressed = false;
         }
         // Shiftの判定
-        if (key_event->modifiers().testFlag(Qt::ShiftModifier)) {
+        if (key_event->key() == Qt::Key_Shift) {
             m_shift_is_pressed = false;
         }
     }
@@ -221,6 +221,11 @@ public:
         std::ofstream note_log;
         note_log.open("note.log", std::fstream::out | std::fstream::trunc);
         auto note = m_note_manager->getNote();
+        auto coord = m_note_manager->getCoord();
+        for (auto c : coord) {
+            note_log << c.toStdString() << " ";
+        }
+        note_log << std::endl;
         for (int i = 0; i < BasicParams::octet_num; i++) {
             for (auto n : note.at(i)) {
                 note_log << n->start_x << " " << n->end_x << " " << n->sound << " ";
