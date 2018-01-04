@@ -11,13 +11,14 @@ TEMPLATE = app
 
 SOURCES += src/main.cpp             \
            src/mainwindow.cpp    \
-           src/event.cpp    \
-           src/note.cpp     \
-           src/basic_params.cpp
+           src/event_manager.cpp    \
+           src/note_manager.cpp     \
+           src/basic_params.cpp    \
+           src/mode.cpp
 
 HEADERS  += src/mainwindow.hpp    \
-            src/event.hpp    \
-            src/note.hpp \
+            src/event_manager.hpp    \
+            src/note_manager.hpp \
             src/mode.hpp \
             src/math_util.hpp   \
             src/basic_params.hpp

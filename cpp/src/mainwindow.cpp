@@ -1,13 +1,17 @@
 #include <iostream>
+#include <chrono>
+#include <thread>
 #include <QPainter>
+#include <QLabel>
 #include "mainwindow.hpp"
 #include "basic_params.hpp"
+#include "mode.hpp"
 
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent), m_timer(new QTimer)
 {
-    m_note = std::make_unique<Note>();
-    m_event = std::make_unique<Event>();
+    m_note_manager = std::make_shared<NoteManager>();  //m_note_x_vector, m_note_fourth_vector, m_notes_list);
+    m_event_manager = std::make_unique<EventManager>(m_note_manager);
 
     setGeometry(200, 0, 960, 720);
     setWindowTitle("MusicalScoreMaker");
@@ -19,13 +23,14 @@ MainWindow::MainWindow(QWidget* parent)
             m_button.at(i) = new QPushButton{m_button_params.name.at(i), this};
             m_button.at(i)->setGeometry(QRect(m_button_params.pos.at(i), m_button_params.size.at(i)));
             m_button.at(i)->setCheckable(m_button_params.toggle_or_not.at(i));
+
             if (m_button_params.toggle_or_not.at(i)) {
                 if (i == 3) {
-                    connect(m_button.at(i), SIGNAL(toggled(bool)), this, SLOT(setModePause()));
+                    connect(m_button.at(i), SIGNAL(toggled(bool)), this, SLOT(po()));  //setModePause()));
                 } else if (i == 4) {
-                    connect(m_button.at(i), SIGNAL(toggled(bool)), this, SLOT(setModeInput()));
+                    connect(m_button.at(i), SIGNAL(toggled(bool)), this, SLOT(po()));  //setModeInput()));
                 } else if (i == 5) {
-                    connect(m_button.at(i), SIGNAL(toggled(bool)), this, SLOT(setModePlay()));
+                    connect(m_button.at(i), SIGNAL(toggled(bool)), this, SLOT(po()));  //setModePlay()));
                 }
             } else {
                 connect(m_button.at(i), SIGNAL(clicked()), this, SLOT(po()));
@@ -35,32 +40,92 @@ MainWindow::MainWindow(QWidget* parent)
 
     m_timer->start(BasicParams::time_step);
     connect(m_timer, SIGNAL(timeout()), this, SLOT(update()));
+    m_cnt = std::chrono::system_clock::now();
 }
 
-void MainWindow::paintEvent(QPaintEvent* paint_event)
+void MainWindow::paintEvent(QPaintEvent* /*paint_event*/)
 {
-    //auto delta_time = 1000 * time
     QPainter painter(this);
-    m_note->update(m_mode);
 
-    {  // paint Frame
-        painter.setPen(QPen(m_color.blue, 2));
-        painter.drawLine(50, BasicParams::frame_y_center - 200, 50, BasicParams::frame_y_center + 200);
+    m_note_manager->update();
+
+    // 譜面のy座標の計算
+    std::vector<int> y_pos;
+    if (BasicParams::octet_num == 1) {
+        y_pos = {0};
+    } else if (BasicParams::octet_num == 2) {
+        y_pos = {static_cast<int>(-BasicParams::frame_y_length / 8), static_cast<int>(BasicParams::frame_y_length / 8)};
+    } else if (BasicParams::octet_num == 3) {
+        y_pos = {static_cast<int>(-BasicParams::frame_y_length / 4), 0, static_cast<int>(BasicParams::frame_y_length / 4)};
+    } else if (BasicParams::octet_num == 4) {
+        y_pos = {
+            static_cast<int>(-BasicParams::frame_y_length / 10 * 3), static_cast<int>(-BasicParams::frame_y_length / 10 * 1),
+            static_cast<int>(BasicParams::frame_y_length / 10 * 1), static_cast<int>(BasicParams::frame_y_length / 10 * 3)};
     }
-    {      // paint Note Class
-        {  //paint vertical lines
-            auto po = m_note->getOneXVector();
+
+    {  // 枠の描画
+        painter.setPen(QPen(m_color.blue, 2));
+        painter.drawLine(50, BasicParams::frame_y_center - BasicParams::frame_y_length / 2, 50, BasicParams::frame_y_center + BasicParams::frame_y_length / 2);
+    }
+
+    {      // Noteクラスの描画
+        {  // 縦線群の描画
+            auto po = m_note_manager->getOneXVector();
             painter.setPen(QPen(m_color.black, 2));
-            for (const double& x : m_note->getOneXVector()) {
-                painter.drawLine(x, 310 - 30, x, 310 + 30);
-            }
-            for (const double& x : m_note->getOneFourthXVector()) {
-                painter.drawLine(x, 310 - 15, x, 310 + 15);
+            for (int y : y_pos) {
+                for (const double& x : m_note_manager->getOneXVector()) {
+                    painter.drawLine(x, y + 310 - 30, x, y + 310 + 30);
+                }
+                for (const double& x : m_note_manager->getOneFourthXVector()) {
+                    painter.drawLine(x, y + 310 - 15, x, y + 310 + 15);
+                }
             }
         }
-        {// paint notes
+
+        {  // 音符の描画
+            std::vector<std::vector<std::shared_ptr<NoteManager::Note>>> note = m_note_manager->getNote();
+            m_sound_label.clear();
+            for (unsigned int i = 0; i < m_note_manager->getNote().size(); i++) {
+                for (unsigned int j = 0; j < m_note_manager->getNote().at(i).size(); j++) {
+
+                    std::shared_ptr<NoteManager::Note> note = m_note_manager->getNote().at(i).at(j);
+
+                    // 色の設定
+                    painter.setPen(QPen(m_color.green, 3));
+                    for (auto selected_note : m_event_manager->getSelectedNote()) {
+                        if (note == selected_note) {
+                            painter.setPen(QPen(m_color.blue, 3));
+                        }
+                    }
+                    if (note == m_event_manager->getOnNote()) {
+                        painter.setPen(QPen(m_color.skyblue, 3));
+                    }
+
+                    if (note->end_x < 0) {
+                        continue;
+                    }
+
+                    double nx1 = BasicParams::min_score_x - m_note_manager->getNowX() + note->start_x;
+                    double nx2 = BasicParams::min_score_x - m_note_manager->getNowX() + note->end_x;
+                    if (nx1 < BasicParams::max_score_x and nx2 > BasicParams::min_score_x) {
+                        if (nx2 < BasicParams::max_score_x and nx1 > BasicParams::min_score_x) {
+                            painter.drawRect(nx1, y_pos.at(i) + BasicParams::frame_y_center - 8, nx2 - nx1, 16);
+                            std::shared_ptr<QLabel> sound_label = std::make_shared<QLabel>(m_note_manager->getNoteSound(note->sound), this);
+                            sound_label->move(nx1, y_pos.at(i) + BasicParams::frame_y_center - 16);
+                            sound_label->setFixedWidth(30);
+                            m_sound_label.push_back(sound_label);
+                            //sound_label.setMouseTracking(True)
+                        }
+                    } else {
+                    }
+                }
+            }
+            for (auto sound_label : m_sound_label) {
+                sound_label->show();
+            }
         }
-        {  // paint piano
+
+        {  // ピアノの描画
             painter.setPen(QPen(m_color.black, 2));
             painter.drawLine(60, 550, 900, 550);
             painter.drawLine(60, 700, 900, 700);
@@ -92,4 +157,11 @@ void MainWindow::paintEvent(QPaintEvent* paint_event)
         painter.drawRect(0, BasicParams::frame_y_center - 200, 50 - 2, 400);
         painter.drawRect(900, BasicParams::frame_y_center - 200, 960 - 600, 400);
     }
+
+    auto diff_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - m_cnt).count();
+    auto wait_time = static_cast<int>(BasicParams::time_step - diff_time);
+    //std::cout << wait_time << " " << diff_time << " " << wait_time + diff_time << std::endl;
+    std::this_thread::sleep_for(std::chrono::microseconds(wait_time * 1000));
+
+    m_cnt = std::chrono::system_clock::now();
 }
