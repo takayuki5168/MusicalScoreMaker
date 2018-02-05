@@ -45,7 +45,7 @@ public:
             m_note.at(i).clear();
         }
     }
-  void eraseNote(int octet, int idx) { m_note.at(octet).erase(m_note.at(octet).begin() + idx); }
+    void eraseNote(int octet, int idx) { m_note.at(octet).erase(m_note.at(octet).begin() + idx); }
     std::vector<std::vector<std::shared_ptr<Note>>> getNote() { return m_note; }
 
     // coordに関する関数
